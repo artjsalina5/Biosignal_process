@@ -111,56 +111,6 @@ def convert_to_utc(
         return None
 
 
-def plot_times(times_dict):
-    """Plots the events as vertical lines on a time axis with labels."""
-    time_start = datetime.strptime(
-        str(times_dict["start_time"][0]), "%Y-%m-%d %H:%M:%S UTC"
-    ).replace(tzinfo=ZoneInfo("UTC"))
-    time_end = datetime.strptime(
-        str(times_dict["end_time"][0]), "%Y-%m-%d %H:%M:%S UTC"
-    ).replace(tzinfo=ZoneInfo("UTC"))
-
-    plt.figure(figsize=(12, 6))
-
-    for event, values in times_dict.items():
-        if event in [
-            "date",
-            "start_time",
-            "end_time",
-            "participant_id",
-            "total_time",
-            "experimental_time",
-            "arrival_time",
-        ]:
-            continue
-        event_time = datetime.strptime(str(values[0]), "%Y-%m-%d %H:%M:%S UTC").replace(
-            tzinfo=ZoneInfo("UTC")
-        )
-        plt.axvline(event_time, color="blue", linestyle="--", alpha=0.7)
-        plt.text(
-            event_time,
-            0.5,
-            event.replace("_", " ").capitalize(),
-            rotation=90,
-            verticalalignment="center",
-            horizontalalignment="right",
-            fontsize=10,
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.5),
-        )
-
-    plt.axvline(time_start, color="green", linestyle="-", alpha=0.8, label="Start")
-    plt.axvline(time_end, color="red", linestyle="-", alpha=0.8, label="End")
-
-    plt.xlim([time_start - timedelta(minutes=5), time_end + timedelta(minutes=5)])
-
-    plt.title("Event Timeline")
-    plt.xlabel("Time (UTC)")
-    plt.yticks([])
-    plt.legend(loc="upper left")
-    plt.grid(axis="x", linestyle="--", alpha=0.6)
-    plt.show()
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python time_loader.py <file_path> <participant_id>")
