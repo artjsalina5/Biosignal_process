@@ -1,14 +1,14 @@
 import sys
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
-import pytz
+import neurokit2 as nk
 from matplotlib import pyplot as plt
-from pytz import timezone
 
 
-def load_data(file_path):
+def load_event_data(file_path):
     """Loads data from a CSV file."""
     try:
         df = pd.read_csv(file_path)
@@ -40,9 +40,9 @@ def select_participant(data, participant):
     if df.empty:
         print(f"No data for Participant ID: {participant}")
     else:
-        print(f"Data for Participant ID {participant}:")
-        print(df.head())
-        print("Converting to UTC for data analysis...")
+        #print(f"Data for Participant ID {participant}:")
+        #display(df.head())
+        print("Participant Selected and loaded, converting to UTC for data synchronization...")
     return df
 
 
@@ -51,7 +51,7 @@ def time_extract(data):
     Identifies and prints the start and end times of the test in UTC, along with other column values.
     Converts all time columns to UTC where applicable.
     """
-    print("Columns in data:", data.columns.tolist())
+    #print("Columns in data:", data.columns.tolist())
 
     if "date" not in data.columns:
         print("Error: 'date' column not found.")
@@ -77,7 +77,7 @@ def time_extract(data):
             if data[column].dtype == object:
                 utc_times[column] = [
                     (
-                        convert_to_utc(date, t).strftime("%Y-%m-%d %H:%M:%S UTC")
+                        convert_to_utc(date, t).strftime("%Y-%m-%d %H:%M:%S")
                         if convert_to_utc(date, t)
                         else t
                     )
@@ -89,8 +89,8 @@ def time_extract(data):
             print(f"Error processing column '{column}': {e}")
             utc_times[column] = data[column].values.tolist()
 
-    for column in utc_times:
-        print(f"{column}: {utc_times[column]}")
+    #for column in utc_times:
+     #   print(f"{column}: {utc_times[column]}")
 
     return times, utc_times
 
@@ -103,15 +103,11 @@ def convert_to_utc(
         combined_str = f"{date_str} {time_str}"
         combined_format = f"{date_format} {time_format}"
         local_datetime = datetime.strptime(combined_str, combined_format)
-        eastern = timezone("US/Eastern")
-        localized_datetime = eastern.localize(local_datetime, is_dst=None)
-        utc_datetime = localized_datetime.astimezone(pytz.utc)
+        eastern = ZoneInfo("America/New_York")
+        localized_datetime = local_datetime.replace(tzinfo=eastern)
+        utc_datetime = localized_datetime.astimezone(ZoneInfo("UTC"))
         return utc_datetime
-    except (
-        ValueError,
-        pytz.exceptions.AmbiguousTimeError,
-        pytz.exceptions.NonExistentTimeError,
-    ):
+    except ValueError:
         return None
 
 
@@ -119,10 +115,10 @@ def plot_times(times_dict):
     """Plots the events as vertical lines on a time axis with labels."""
     time_start = datetime.strptime(
         str(times_dict["start_time"][0]), "%Y-%m-%d %H:%M:%S UTC"
-    ).replace(tzinfo=pytz.utc)
+    ).replace(tzinfo=ZoneInfo("UTC"))
     time_end = datetime.strptime(
         str(times_dict["end_time"][0]), "%Y-%m-%d %H:%M:%S UTC"
-    ).replace(tzinfo=pytz.utc)
+    ).replace(tzinfo=ZoneInfo("UTC"))
 
     plt.figure(figsize=(12, 6))
 
@@ -138,7 +134,7 @@ def plot_times(times_dict):
         ]:
             continue
         event_time = datetime.strptime(str(values[0]), "%Y-%m-%d %H:%M:%S UTC").replace(
-            tzinfo=pytz.utc
+            tzinfo=ZoneInfo("UTC")
         )
         plt.axvline(event_time, color="blue", linestyle="--", alpha=0.7)
         plt.text(
@@ -177,7 +173,7 @@ if __name__ == "__main__":
         print("Error: Participant ID must be an integer.")
         sys.exit(1)
 
-    data = load_data(file_path)
+    data = load_event_data(file_path)
     if data is not None:
         participant_data = select_participant(data, participant_id)
         if not participant_data.empty:
@@ -185,4 +181,4 @@ if __name__ == "__main__":
         else:
             print(f"No data for participant {participant_id}, cannot proceed.")
 
-        plot_times(utc_times)
+        #plot_times(utc_times)
